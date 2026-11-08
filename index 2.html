@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#101b2c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Low Poly Rush">
+<title>LOW POLY RUSH</title>
+<style>
+  :root { color-scheme: dark; --ink:#f5f7ff; --muted:#a8b5c9; --cyan:#8fe4e8; --orange:#ffbd70; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#e88d78; font-family: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; touch-action:none; }
+  body { position:fixed; inset:0; user-select:none; -webkit-user-select:none; }
+  #game { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .vignette { position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,rgba(31,35,57,.12),transparent 24%,transparent 70%,rgba(36,38,45,.2)); }
+  #topbar { position:absolute; top:max(12px,env(safe-area-inset-top)); left:12px; right:12px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; pointer-events:none; }
+  .brand { font-weight:1000; letter-spacing:2px; font-size:clamp(13px,2.2vw,19px); line-height:1; text-shadow:0 2px 8px #0008; }
+  .brand span { color:var(--cyan); }
+  .stats { display:flex; gap:8px; }
+  .stat { min-width:70px; padding:7px 10px 6px; border:1px solid #ffffff28; border-radius:12px; background:#25334ac9; box-shadow:0 4px 18px #0003; text-align:right; backdrop-filter:blur(8px); }
+  .stat small { display:block; color:var(--muted); font-size:9px; font-weight:800; letter-spacing:1.2px; }
+  .stat strong { font-size:clamp(15px,2.4vw,21px); font-weight:950; font-variant-numeric:tabular-nums; }
+  #pauseBtn { pointer-events:auto; width:38px; height:38px; border-radius:12px; border:1px solid #ffffff35; background:#25334ad9; color:white; font-size:17px; font-weight:900; }
+  #message { position:absolute; inset:0; display:grid; place-items:center; padding:20px; background:linear-gradient(180deg,#09142644,#09142688); }
+  #panel { width:min(440px,92vw); padding:26px 24px 22px; text-align:center; background:linear-gradient(145deg,#293b55f2,#17283ef5); border:1px solid #ffe0b45c; border-radius:25px; box-shadow:0 22px 70px #0008, inset 0 1px #ffffff18; }
+  .eyebrow { color:var(--cyan); font-size:10px; font-weight:950; letter-spacing:3px; margin-bottom:9px; }
+  h1 { margin:0; color:white; font-size:clamp(32px,8vw,52px); line-height:.95; letter-spacing:-2px; font-weight:1000; }
+  h1 em { color:var(--orange); font-style:normal; }
+  #panel p { color:#c4d1e2; font-size:14px; line-height:1.55; margin:15px auto 18px; max-width:330px; }
+  #panel .bestline { color:#91a7c1; font-size:12px; margin:-4px 0 17px; }
+  #mainBtn { width:100%; border:0; border-radius:15px; padding:15px 18px; color:#102033; background:linear-gradient(100deg,#ffd18c,#ff9b79); font-size:15px; font-weight:1000; letter-spacing:1.3px; box-shadow:0 7px 0 #b85b50,0 13px 25px #0004; }
+  #mainBtn:active { transform:translateY(4px); box-shadow:0 3px 0 #b85b50,0 8px 16px #0004; }
+  .help { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; color:#8ea2bb; font-size:11px; margin-top:17px; }
+  .key { display:inline-grid; place-items:center; min-width:23px; padding:3px 6px; border:1px solid #ffffff35; border-radius:6px; color:#e5f6ff; background:#ffffff0d; font-weight:900; }
+  #controls { position:absolute; left:0; right:0; bottom:max(14px,env(safe-area-inset-bottom)); display:flex; align-items:flex-end; justify-content:space-between; padding:0 clamp(12px,4vw,34px); pointer-events:none; }
+  .controlGroup { display:flex; gap:10px; align-items:flex-end; pointer-events:auto; }
+  .ctrl { display:grid; place-items:center; width:clamp(58px,10vw,78px); height:clamp(58px,10vw,78px); border:1px solid #d8f8ff55; border-radius:19px; color:white; background:linear-gradient(145deg,#1c3552d9,#0b192bd9); box-shadow:0 7px 0 #07111f99,0 10px 25px #0004; font-size:25px; font-weight:1000; touch-action:none; }
+  .ctrl small { font-size:9px; letter-spacing:1px; color:#a9c4d8; margin-top:-5px; }
+  .ctrl:active, .ctrl.pressed { transform:translateY(4px); background:linear-gradient(145deg,#28516e,#11243a); box-shadow:0 3px 0 #07111f99,0 7px 15px #0003; }
+  .pedal { width:clamp(66px,11vw,88px); height:clamp(68px,11vw,88px); border-radius:18px; font-size:13px; letter-spacing:1px; }
+  #gas { background:linear-gradient(145deg,#1a806bdb,#104739ed); border-color:#8affd177; }
+  #brake { background:linear-gradient(145deg,#a74d4ddb,#59242ced); border-color:#ffb2a477; }
+  #toast { position:absolute; top:18%; left:50%; transform:translateX(-50%); padding:8px 14px; color:#fff; font-weight:900; font-size:12px; letter-spacing:1px; border-radius:99px; background:#101c30c9; border:1px solid #ffffff35; opacity:0; transition:opacity .2s; pointer-events:none; }
+  @media (orientation:landscape) {
+    #controls { padding-left:max(18px,env(safe-area-inset-left)); padding-right:max(18px,env(safe-area-inset-right)); bottom:max(10px,env(safe-area-inset-bottom)); }
+    .controlGroup { gap:8px; }
+    .ctrl { width:62px; height:62px; border-radius:16px; }
+    .pedal { width:70px; height:68px; }
+    #panel { padding:20px 24px 18px; }
+    #panel p { margin:10px auto 13px; }
+    .help { margin-top:12px; }
+  }
+  @media (max-height:420px) {
+    #topbar { top:7px; }
+    #controls { bottom:7px; }
+    .ctrl { width:54px; height:54px; }
+    .pedal { width:61px; height:58px; }
+    #panel { padding:14px 20px; }
+    h1 { font-size:34px; }
+    #panel p { font-size:12px; margin:8px auto 10px; }
+    .bestline { display:none; }
+    .help { margin-top:8px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Low Poly Rush racing game"></canvas>
+<div class="vignette"></div>
+<div id="topbar">
+  <div class="brand">LOW POLY <span>RUSH</span></div>
+  <div class="stats">
+    <div class="stat"><small>SCORE</small><strong id="score">0</strong></div>
+    <div class="stat"><small>KM/H</small><strong id="speed">0</strong></div>
+    <button id="pauseBtn" aria-label="Pause game" style="display:none">Ⅱ</button>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="message">
+  <div id="panel">
+    <div class="eyebrow">ARCADE ROAD TRIP</div>
+    <h1>LOW POLY<br><em>RUSH</em></h1>
+    <p>Race through a glowing sunset valley, dodge low-poly traffic and see how far you can get.</p>
+    <div class="bestline">PERSONAL BEST: <strong id="bestMenu">0</strong></div>
+    <button id="mainBtn">START DRIVING</button>
+    <div class="help"><span><b class="key">◀</b> <b class="key">▶</b> STEER</span><span><b class="key">↑</b> GAS</span><span><b class="key">↓</b> BRAKE</span></div>
+  </div>
+</div>
+<div id="controls" style="display:none">
+  <div class="controlGroup">
+    <button class="ctrl" id="left" aria-label="Steer left">◀</button>
+    <button class="ctrl" id="right" aria-label="Steer right">▶</button>
+  </div>
+  <div class="controlGroup">
+    <button class="ctrl pedal" id="brake" aria-label="Brake">BRAKE<small>▼</small></button>
+    <button class="ctrl pedal" id="gas" aria-label="Accelerate">GAS<small>▲</small></button>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d', { alpha:false });
+  const ui = {
+    message: document.getElementById('message'), panel: document.getElementById('panel'),
+    mainBtn: document.getElementById('mainBtn'), bestMenu: document.getElementById('bestMenu'),
+    score: document.getElementById('score'), speed: document.getElementById('speed'),
+    controls: document.getElementById('controls'), pause: document.getElementById('pauseBtn'), toast: document.getElementById('toast')
+  };
+  let W = 0, H = 0, DPR = 1, lastTime = 0, state = 'menu';
+  let score = 0, distance = 0, speed = 0, playerX = 0, best = 0;
+  let obstacles = [], scenery = [], spawnTimer = 0, roadPhase = 0, flash = 0;
+  const held = { left:false, right:false, gas:false, brake:false };
+  const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+  const rand = (a,b) => a + Math.random() * (b-a);
+  try { best = Number(localStorage.getItem('lowPolyRushBest') || 0) || 0; } catch (_) { best = 0; }
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.max(320, window.innerWidth);
+    H = Math.max(320, window.innerHeight);
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  window.addEventListener('orientationchange', () => setTimeout(resize,150), {passive:true});
+  resize();
+
+  const horizon = () => H * (H > W ? .32 : .30);
+  const roadBottom = () => H * 1.05;
+  function roadHalf(t) { return W * (.075 + .405 * Math.pow(t, .92)); }
+  function curve(t) { return Math.sin(roadPhase + (1-t)*1.25) * W * .045 * (0.25 + t*.75); }
+  function roadCenter(t) { return W/2 + curve(t); }
+  function yAt(t) { return horizon() + (roadBottom()-horizon()) * t; }
+  function xAt(rel,t) { return roadCenter(t) + rel * roadHalf(t); }
+
+  function resetGame() {
+    score = 0; distance = 0; speed = 112; playerX = 0;
+    obstacles = []; scenery = []; spawnTimer = .65; roadPhase = 0; flash = 0;
+    for (let i=0;i<24;i++) scenery.push({ side: i%2 ? -1:1, z: (i/24), kind: Math.random()<.62?'tree':(Math.random()<.65?'rock':'cactus'), size:rand(.75,1.3) });
+    updateHUD();
+  }
+  function updateHUD() {
+    ui.score.textContent = Math.floor(score).toLocaleString();
+    ui.speed.textContent = Math.round(speed);
+    ui.bestMenu.textContent = Math.floor(best).toLocaleString();
+  }
+  function showPanel(mode) {
+    ui.message.style.display = 'grid';
+    if (mode === 'menu') {
+      ui.panel.querySelector('.eyebrow').textContent = 'ARCADE ROAD TRIP';
+      ui.panel.querySelector('h1').innerHTML = 'LOW POLY<br><em>RUSH</em>';
+      ui.panel.querySelector('p').textContent = 'Race through a glowing sunset valley, dodge low-poly traffic and see how far you can get.';
+      ui.panel.querySelector('.bestline').style.display = 'block';
+      ui.mainBtn.textContent = 'START DRIVING';
+    } else if (mode === 'paused') {
+      ui.panel.querySelector('.eyebrow').textContent = 'TAKE A BREATHER';
+      ui.panel.querySelector('h1').innerHTML = 'GAME<br><em>PAUSED</em>';
+      ui.panel.querySelector('p').textContent = 'Your run is paused. Jump back in whenever you are ready.';
+      ui.panel.querySelector('.bestline').style.display = 'none';
+      ui.mainBtn.textContent = 'RESUME DRIVE';
+    } else {
+      ui.panel.querySelector('.eyebrow').textContent = 'RUN COMPLETE';
+      ui.panel.querySelector('h1').innerHTML = 'NICE<br><em>DRIVING!</em>';
+      ui.panel.querySelector('p').textContent = 'You scored ' + Math.floor(score).toLocaleString() + ' points. Think you can beat that run?';
+      ui.panel.querySelector('.bestline').style.display = 'block';
+      ui.panel.querySelector('.bestline').innerHTML = 'PERSONAL BEST: <strong id="bestMenu">' + Math.floor(best).toLocaleString() + '</strong>';
+      ui.bestMenu = document.getElementById('bestMenu');
+      ui.mainBtn.textContent = 'DRIVE AGAIN';
+    }
+  }
+  function startGame() {
+    resetGame(); state = 'running'; ui.message.style.display = 'none';
+    ui.controls.style.display = 'flex'; ui.pause.style.display = 'block'; clearHeld();
+  }
+  function pauseGame() {
+    if (state !== 'running') return;
+    state = 'paused'; clearHeld(); showPanel('paused');
+  }
+  function resumeGame() {
+    if (state !== 'paused') return;
+    state = 'running'; ui.message.style.display = 'none';
+  }
+  function endGame() {
+    if (state !== 'running') return;
+    state = 'over'; clearHeld();
+    if (score > best) {
+      best = Math.floor(score);
+      try { localStorage.setItem('lowPolyRushBest', String(best)); } catch (_) {}
+    }
+    updateHUD(); showPanel('over');
+  }
+  function clearHeld() {
+    Object.keys(held).forEach(k => held[k] = false);
+    document.querySelectorAll('.ctrl').forEach(b => b.classList.remove('pressed'));
+  }
+  ui.mainBtn.addEventListener('click', () => {
+    if (state === 'paused') resumeGame(); else startGame();
+  });
+  ui.pause.addEventListener('click', pauseGame);
+
+  function bindHold(id, key) {
+    const el = document.getElementById(id);
+    const down = e => { e.preventDefault(); held[key] = true; el.classList.add('pressed'); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
+    const up = e => { if (e) e.preventDefault(); held[key] = false; el.classList.remove('pressed'); };
+    el.addEventListener('pointerdown', down);
+    ['pointerup','pointercancel','lostpointercapture','pointerleave'].forEach(ev => el.addEventListener(ev, up));
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  bindHold('left','left'); bindHold('right','right'); bindHold('gas','gas'); bindHold('brake','brake');
+  window.addEventListener('keydown', e => {
+    const map = {ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake'};
+    if (map[e.key]) { held[map[e.key]] = true; e.preventDefault(); }
+    if ((e.key === 'Escape' || e.key === 'p') && state === 'running') pauseGame();
+    else if ((e.key === 'Escape' || e.key === 'p') && state === 'paused') resumeGame();
+    if ((e.key === 'Enter' || e.key === ' ') && state !== 'running') { if (state==='paused') resumeGame(); else startGame(); }
+  });
+  window.addEventListener('keyup', e => {
+    const map = {ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake'};
+    if (map[e.key]) { held[map[e.key]] = false; e.preventDefault(); }
+  });
+  window.addEventListener('blur', () => { if (state === 'running') pauseGame(); });
+
+  function spawnTraffic() {
+    const lanes = [-.67,0,.67];
+    const first = lanes[Math.floor(Math.random()*lanes.length)];
+    obstacles.push({x:first,z:0,kind:Math.random()>.72?'van':'car',color:['#f4b942','#5dc6d5','#e66e5c','#b1a0e8','#e8edf4'][Math.floor(Math.random()*5)],wiggle:rand(0,6)});
+    if (Math.random() < .22) {
+      const other = lanes.filter(v=>v!==first)[Math.floor(Math.random()*2)];
+      obstacles.push({x:other,z:-.18,kind:'car',color:['#5dc6d5','#e66e5c','#e8edf4'][Math.floor(Math.random()*3)],wiggle:rand(0,6)});
+    }
+  }
+
+  function update(dt) {
+    if (state !== 'running') return;
+    dt = Math.min(dt,.035);
+    const steer = (held.right?1:0) - (held.left?1:0);
+    playerX += steer * dt * (1.55 + speed/260);
+    playerX = clamp(playerX,-.91,.91);
+    if (held.brake) speed -= 125*dt;
+    else speed += (held.gas ? 34 : 15)*dt;
+    speed = clamp(speed,55,248);
+    const motion = speed/1000;
+    distance += speed * dt * .035;
+    score += speed * dt * .12;
+    roadPhase += dt * (.22 + speed/420);
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) { spawnTraffic(); spawnTimer = rand(.95,1.48) * (170/speed); }
+    for (const o of obstacles) o.z += motion * dt * 9.1;
+    obstacles = obstacles.filter(o => o.z < 1.17);
+    for (const s of scenery) {
+      s.z += motion * dt * 7.4;
+      if (s.z > 1.08) { s.z = rand(-.08,.02); s.side = Math.random()>.5?1:-1; s.kind=Math.random()<.62?'tree':(Math.random()<.65?'rock':'cactus'); s.size=rand(.75,1.3); }
+    }
+    for (const o of obstacles) {
+      if (!o.hit && o.z > .79 && o.z < .94 && Math.abs(o.x-playerX) < (o.kind==='van'?.31:.265)) {
+        o.hit = true; flash = .28; endGame(); break;
+      }
+    }
+    if (playerX < -.84 || playerX > .84) {
+      speed = Math.max(55,speed-22*dt);
+    }
+    if (flash > 0) flash -= dt;
+    updateHUD();
+  }
+
+  function polygon(points, fill, stroke=null, lineWidth=1) {
+    ctx.beginPath(); points.forEach((p,i)=> i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1])); ctx.closePath();
+    if (fill) { ctx.fillStyle=fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle=stroke; ctx.lineWidth=lineWidth; ctx.stroke(); }
+  }
+  function drawSky() {
+    const hy=horizon();
+    const sky=ctx.createLinearGradient(0,0,0,hy*1.5);
+    sky.addColorStop(0,'#ef8c78'); sky.addColorStop(.48,'#f4a486'); sky.addColorStop(1,'#f8d2a0');
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+    // Warm sun and broad sunset glow.
+    const sunX=W*.76, sunY=hy*.58, r=Math.min(W,H)*.085;
+    const glow=ctx.createRadialGradient(sunX,sunY,r*.08,sunX,sunY,r*2.5);
+    glow.addColorStop(0,'#fff0bdc9'); glow.addColorStop(.36,'#ffd99b70'); glow.addColorStop(1,'#ffd99b00');
+    ctx.fillStyle=glow; ctx.fillRect(sunX-r*2.5,sunY-r*2.5,r*5,r*5);
+    ctx.fillStyle='#ffe8b0'; ctx.beginPath(); ctx.arc(sunX,sunY,r*.48,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff1ce'; ctx.beginPath(); ctx.arc(sunX-r*.12,sunY-r*.13,r*.12,0,Math.PI*2); ctx.fill();
+
+    // Flat angular clouds catch the last orange light.
+    const cloud=(x,y,w,h)=>{
+      ctx.save(); ctx.globalAlpha=.24;
+      polygon([[x-w*.5,y],[x-w*.34,y-h*.23],[x-w*.12,y-h*.19],[x,y-h*.38],[x+w*.2,y-h*.16],[x+w*.43,y-h*.2],[x+w*.5,y],[x+w*.24,y+h*.08],[x-w*.25,y+h*.08]],'#fff0d1');
+      ctx.restore();
+    };
+    cloud(W*.23,hy*.36,W*.2,H*.022); cloud(W*.55,hy*.22,W*.15,H*.018); cloud(W*.9,hy*.42,W*.18,H*.02);
+
+    // Distant mountain chain with visible low-poly facets.
+    const farY=hy;
+    polygon([[0,farY*.99],[W*.09,farY*.53],[W*.18,farY*.82],[W*.31,farY*.35],[W*.43,farY*.85],[W*.56,farY*.48],[W*.68,farY*.86],[W*.81,farY*.39],[W*.93,farY*.8],[W,farY*.58],[W,farY*1.2],[0,farY*1.2]],'#967b83');
+    polygon([[0,farY*.99],[W*.09,farY*.53],[W*.18,farY*.82],[W*.31,farY*.35],[W*.26,farY*.91],[W*.16,farY*.8],[W*.09,farY*.7],[0,farY*1.12]],'#b18b8a');
+    polygon([[W*.31,farY*.35],[W*.43,farY*.85],[W*.56,farY*.48],[W*.68,farY*.86],[W*.51,farY*.92],[W*.43,farY*.75],[W*.37,farY*.7]],'#826f7c');
+    polygon([[W*.56,farY*.48],[W*.68,farY*.86],[W*.81,farY*.39],[W*.93,farY*.8],[W*.8,farY*.91],[W*.7,farY*.79]],'#a27d83');
+    polygon([[W*.31,farY*.35],[W*.36,farY*.63],[W*.29,farY*.58]],'#d0a09a');
+    polygon([[W*.81,farY*.39],[W*.85,farY*.66],[W*.77,farY*.62]],'#d7a097');
+
+    // Near hills form a layered, angular valley around the road.
+    polygon([[0,hy*.91],[W*.12,hy*.7],[W*.25,hy*.88],[W*.39,hy*.66],[W*.53,hy*.9],[W*.7,hy*.68],[W*.86,hy*.89],[W,hy*.72],[W,hy*1.23],[0,hy*1.23]],'#687d70');
+    polygon([[0,hy*.95],[W*.12,hy*.7],[W*.2,hy*.91],[W*.31,hy*.83],[W*.43,hy*1.04],[W*.24,hy*1.15],[0,hy*1.18]],'#829078');
+    polygon([[W*.53,hy*.9],[W*.7,hy*.68],[W*.86,hy*.89],[W,hy*.72],[W,hy*1.18],[W*.76,hy*1.12],[W*.64,hy*1.02]],'#536f68');
+    polygon([[W*.12,hy*.7],[W*.25,hy*.88],[W*.2,hy*.91]],'#a3a083');
+    polygon([[W*.7,hy*.68],[W*.86,hy*.89],[W*.76,hy*.91]],'#9b927b');
+
+    const ground=ctx.createLinearGradient(0,hy,0,H);
+    ground.addColorStop(0,'#a5a078'); ground.addColorStop(.5,'#7d896b'); ground.addColorStop(1,'#596f61');
+    ctx.fillStyle=ground; ctx.fillRect(0,hy,W,H-hy);
+    // angular patches in the open hills
+    polygon([[0,hy*1.18],[W*.18,hy*1.08],[W*.3,hy*1.34],[W*.13,hy*1.42],[0,hy*1.36]],'#b0a17c');
+    polygon([[W*.72,hy*1.12],[W*.9,hy*1.04],[W,hy*1.18],[W,hy*1.43],[W*.82,hy*1.35]],'#71816a');
+  }
+  function drawRoad() {
+    const strips=42;
+    for (let i=0;i<strips;i++) {
+      const t1=i/strips, t2=(i+1)/strips;
+      const y1=yAt(t1), y2=yAt(t2), h1=roadHalf(t1), h2=roadHalf(t2), c1=roadCenter(t1), c2=roadCenter(t2);
+      // Sandy shoulders sit outside the asphalt.
+      const sh1=h1+W*(.025+.025*t1), sh2=h2+W*(.025+.025*t2);
+      polygon([[c1-sh1,y1],[c1-h1,y1],[c2-h2,y2],[c2-sh2,y2]],i%2?'#c5a47a':'#b99670');
+      polygon([[c1+h1,y1],[c1+sh1,y1],[c2+sh2,y2],[c2+h2,y2]],i%2?'#c5a47a':'#b99670');
+      polygon([[c1-h1,y1],[c1+h1,y1],[c2+h2,y2],[c2-h2,y2]],i%2?'#454b52':'#4b5158');
+      const edge1=Math.max(1,W*.003)*(0.4+t1), edge2=Math.max(1,W*.003)*(0.4+t2);
+      polygon([[c1-h1,y1],[c1-h1+edge1,y1],[c2-h2+edge2,y2],[c2-h2,y2]],'#f3e5bd');
+      polygon([[c1+h1-edge1,y1],[c1+h1,y1],[c2+h2,y2],[c2+h2-edge2,y2]],'#f3e5bd');
+    }
+    // Three lanes, with dashes that grow toward the camera.
+    for (const lane of [-1/3,1/3]) {
+      for (let n=0;n<15;n++) {
+        const z=(n/15 + (distance*.075)%1)%1;
+        const t1=z, t2=Math.min(1,z+.022+.032*z);
+        if (t2<=t1) continue;
+        const x1=xAt(lane,t1), x2=xAt(lane,t2);
+        const width1=1+5.5*t1, width2=1+5.5*t2;
+        polygon([[x1-width1,yAt(t1)],[x1+width1,yAt(t1)],[x2+width2,yAt(t2)],[x2-width2,yAt(t2)]],'#eee8d6');
+      }
+    }
+    // A subtle center-road highlight gives the asphalt a sunlit 3D finish.
+    const hy=horizon();
+    const centerGlow=ctx.createLinearGradient(W*.5,hy, W*.5,H);
+    centerGlow.addColorStop(0,'#ffffff00'); centerGlow.addColorStop(.85,'#ffffff0a'); centerGlow.addColorStop(1,'#ffffff12');
+    ctx.fillStyle=centerGlow; ctx.fillRect(0,horizon(),W,H-horizon());
+  }
+  function drawTree(x,y,s) {
+    // Layered faceted pine tree, with a sunlit face on the right.
+    const trunk=s*.11;
+    polygon([[x-trunk*.55,y],[x-trunk*.36,y-s*.34],[x+trunk*.36,y-s*.34],[x+trunk*.55,y]],'#76513d');
+    polygon([[x,y-s],[x-s*.43,y-s*.48],[x-s*.18,y-s*.49],[x-s*.32,y-s*.19],[x+s*.32,y-s*.19]],'#28564e');
+    polygon([[x,y-s],[x+s*.06,y-s*.48],[x+s*.18,y-s*.49],[x+s*.32,y-s*.19],[x+s*.32,y-s*.19]],'#3d7660');
+    polygon([[x,y-s*.71],[x-s*.48,y-s*.2],[x-s*.16,y-s*.22],[x-s*.3,y+s*.02],[x+s*.3,y+s*.02]],'#2d6658');
+    polygon([[x,y-s*.71],[x+s*.08,y-s*.2],[x+s*.16,y-s*.22],[x+s*.3,y+s*.02],[x+s*.3,y+s*.02]],'#4b8666');
+    polygon([[x-s*.1,y-s*.4],[x+s*.32,y-s*.19],[x+s*.3,y+s*.02],[x+s*.04,y-s*.05]],'#65916b');
+  }
+  function drawCactus(x,y,s) {
+    const w=s*.13;
+    ctx.fillStyle='#376c58'; ctx.fillRect(x-w/2,y-s*.78,w,s*.78);
+    ctx.fillRect(x-w*1.6,y-s*.52,w,s*.33); ctx.fillRect(x-w*1.6,y-s*.52,w*.8,s*.17);
+    ctx.fillRect(x+w*.8,y-s*.65,w,s*.36); ctx.fillRect(x+w*.8,y-s*.65,w*.8,s*.17);
+    polygon([[x-w/2,y-s*.78],[x,y-s*.9],[x+w/2,y-s*.78],[x+w*.3,y-s*.62],[x-w*.3,y-s*.62]],'#5a9670');
+    ctx.fillStyle='#80a77a'; ctx.fillRect(x+w*.1,y-s*.7,w*.12,s*.43);
+  }
+  function drawScenery() {
+    const sorted=[...scenery].sort((a,b)=>a.z-b.z);
+    for (const s of sorted) {
+      const t=clamp(s.z,0,1), side=s.side;
+      const x=roadCenter(t)+side*(roadHalf(t)+W*(.055+.19*t));
+      const y=yAt(t); const size=(H*.025 + H*.17*t)*s.size;
+      if (s.kind==='tree') drawTree(x,y,size);
+      else if (s.kind==='cactus') drawCactus(x,y,size*.92);
+      else {
+        polygon([[x-size*.48,y],[x-size*.38,y-size*.34],[x-size*.08,y-size*.66],[x+size*.27,y-size*.51],[x+size*.5,y-size*.08],[x+size*.4,y]],'#727e70');
+        polygon([[x-size*.08,y-size*.66],[x+size*.27,y-size*.51],[x+size*.06,y-size*.26],[x-size*.2,y-size*.34]],'#9ca087');
+        polygon([[x-size*.2,y-size*.34],[x+size*.06,y-size*.26],[x+size*.4,y],[x-size*.48,y]],'#596f65');
+      }
+    }
+  }
+  function drawTrafficCar(o) {
+    const t=clamp(o.z,0,1.1), x=xAt(o.x,t), y=yAt(t);
+    const scale=.13 + 1.02*Math.pow(clamp(t,0,1),1.3);
+    const width=(o.kind==='van'?W*.069:W*.061)*scale;
+    const height=width*(o.kind==='van'?1.16:1.02);
+    if (t < 0 || t>1.08) return;
+    ctx.fillStyle='#28313b55'; ctx.beginPath(); ctx.ellipse(x,y+height*.02,width*.72,height*.2,0,0,Math.PI*2); ctx.fill();
+    // Rear tires and chunky, faceted bodywork.
+    ctx.fillStyle='#17212a';
+    polygon([[x-width*.48,y-height*.12],[x-width*.45,y-height*.58],[x-width*.29,y-height*.62],[x-width*.25,y-height*.13]],'#17212a');
+    polygon([[x+width*.25,y-height*.13],[x+width*.29,y-height*.62],[x+width*.45,y-height*.58],[x+width*.48,y-height*.12]],'#17212a');
+    polygon([[x-width*.5,y-height*.12],[x-width*.44,y-height*.62],[x-width*.28,y-height*.91],[x+width*.28,y-height*.91],[x+width*.44,y-height*.62],[x+width*.5,y-height*.12],[x+width*.38,y+height*.03],[x-width*.38,y+height*.03]],o.color);
+    polygon([[x-width*.28,y-height*.87],[x-width*.19,y-height*1.15],[x+width*.19,y-height*1.15],[x+width*.28,y-height*.87]],'#263e50');
+    polygon([[x-width*.19,y-height*1.1],[x-width*.13,y-height*.88],[x+width*.13,y-height*.88],[x+width*.19,y-height*1.1]],'#9bcbd0');
+    polygon([[x-width*.5,y-height*.12],[x-width*.44,y-height*.62],[x-width*.28,y-height*.91],[x-width*.08,y-height*.16]],'#ffffff24');
+    ctx.fillStyle='#fff0c5'; ctx.fillRect(x-width*.39,y-height*.24,width*.12,height*.09); ctx.fillRect(x+width*.27,y-height*.24,width*.12,height*.09);
+    ctx.fillStyle='#d95852'; ctx.fillRect(x-width*.38,y-height*.1,width*.14,height*.09); ctx.fillRect(x+width*.24,y-height*.1,width*.14,height*.09);
+    ctx.fillStyle='#25303a'; ctx.fillRect(x-width*.2,y-height*.04,width*.4,height*.055);
+  }
+  function drawPlayer() {
+    const x=xAt(playerX,.88), base=H*.925;
+    const carW=Math.min(W*.285,H*.235), carH=carW*.79;
+    // Long shadow pins the car to the asphalt.
+    ctx.fillStyle='#1d29344f'; ctx.beginPath(); ctx.ellipse(x,base+carH*.03,carW*.72,carH*.19,0,0,Math.PI*2); ctx.fill();
+    // Wide rear tires with angular fenders.
+    polygon([[x-carW*.52,base-carH*.1],[x-carW*.49,base-carH*.58],[x-carW*.35,base-carH*.65],[x-carW*.29,base-carH*.13]],'#171f28');
+    polygon([[x+carW*.29,base-carH*.13],[x+carW*.35,base-carH*.65],[x+carW*.49,base-carH*.58],[x+carW*.52,base-carH*.1]],'#171f28');
+    polygon([[x-carW*.52,base-carH*.14],[x-carW*.46,base-carH*.58],[x-carW*.32,base-carH*.79],[x-carW*.22,base-carH*.96],[x+carW*.22,base-carH*.96],[x+carW*.32,base-carH*.79],[x+carW*.46,base-carH*.58],[x+carW*.52,base-carH*.14],[x+carW*.42,base+carH*.02],[x-carW*.42,base+carH*.02]],'#bd3f3e');
+    // Rear deck and flared shoulders.
+    polygon([[x-carW*.46,base-carH*.58],[x-carW*.32,base-carH*.79],[x-carW*.22,base-carH*.96],[x+carW*.22,base-carH*.96],[x+carW*.32,base-carH*.79],[x+carW*.46,base-carH*.58],[x+carW*.35,base-carH*.37],[x-carW*.35,base-carH*.37]],'#ed6250');
+    polygon([[x-carW*.32,base-carH*.79],[x-carW*.2,base-carH*1.06],[x+carW*.2,base-carH*1.06],[x+carW*.32,base-carH*.79]],'#263f51');
+    polygon([[x-carW*.23,base-carH*1.01],[x-carW*.16,base-carH*.82],[x+carW*.16,base-carH*.82],[x+carW*.23,base-carH*1.01]],'#90cbd0');
+    // Glass reflections and sculpted side facets.
+    polygon([[x-carW*.32,base-carH*.79],[x-carW*.2,base-carH*1.06],[x-carW*.07,base-carH*1.06],[x-carW*.1,base-carH*.79]],'#c6e1d9');
+    polygon([[x-carW*.46,base-carH*.58],[x-carW*.32,base-carH*.79],[x-carW*.25,base-carH*.39],[x-carW*.4,base-carH*.35]],'#ff9870');
+    polygon([[x+carW*.46,base-carH*.58],[x+carW*.32,base-carH*.79],[x+carW*.25,base-carH*.39],[x+carW*.4,base-carH*.35]],'#9f343b');
+    // Spoiler, rear light bar, vents, and bumper.
+    polygon([[x-carW*.37,base-carH*.63],[x-carW*.32,base-carH*.7],[x+carW*.32,base-carH*.7],[x+carW*.37,base-carH*.63],[x+carW*.34,base-carH*.57],[x-carW*.34,base-carH*.57]],'#8f3038');
+    polygon([[x-carW*.43,base-carH*.3],[x-carW*.3,base-carH*.34],[x-carW*.27,base-carH*.27],[x-carW*.43,base-carH*.24]],'#ffe4a8');
+    polygon([[x+carW*.27,base-carH*.27],[x+carW*.3,base-carH*.34],[x+carW*.43,base-carH*.3],[x+carW*.43,base-carH*.24]],'#ffe4a8');
+    ctx.fillStyle='#812b35'; ctx.fillRect(x-carW*.19,base-carH*.22,carW*.38,carH*.075);
+    ctx.fillStyle='#27333b'; ctx.fillRect(x-carW*.08,base-carH*.18,carW*.16,carH*.08);
+    // Small central orange racing stripe catches the sunset.
+    polygon([[x-carW*.025,base-carH*1.035],[x-carW*.018,base-carH*.39],[x+carW*.018,base-carH*.39],[x+carW*.025,base-carH*1.035]],'#ffc77e');
+    // Rear wheels remain visible outside the body for a 3D toy-car silhouette.
+    polygon([[x-carW*.51,base-carH*.2],[x-carW*.47,base-carH*.58],[x-carW*.39,base-carH*.6],[x-carW*.37,base-carH*.18]],'#111923');
+    polygon([[x+carW*.37,base-carH*.18],[x+carW*.39,base-carH*.6],[x+carW*.47,base-carH*.58],[x+carW*.51,base-carH*.2]],'#111923');
+    polygon([[x-carW*.49,base-carH*.25],[x-carW*.46,base-carH*.5],[x-carW*.41,base-carH*.51],[x-carW*.4,base-carH*.24]],'#66717a');
+    polygon([[x+carW*.4,base-carH*.24],[x+carW*.41,base-carH*.51],[x+carW*.46,base-carH*.5],[x+carW*.49,base-carH*.25]],'#66717a');
+  }
+  function drawRoadsideMarkers() {
+    for (let i=0;i<10;i++) {
+      const z=(i/10+(distance*.052)%1)%1, t=z;
+      const y=yAt(t), half=roadHalf(t), size=2+10*t;
+      for (const side of [-1,1]) {
+        const x=roadCenter(t)+side*(half+W*(.034+.017*t));
+        polygon([[x-size*.13,y],[x-size*.1,y-size*1.65],[x+size*.1,y-size*1.65],[x+size*.13,y]],'#e8dfc4');
+        polygon([[x-size*.15,y-size*.95],[x-size*.12,y-size*1.36],[x+size*.12,y-size*1.36],[x+size*.15,y-size*.95]],'#dc6759');
+      }
+    }
+  }
+  function draw() {
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    drawSky(); drawScenery(); drawRoad(); drawRoadsideMarkers();
+    const sorted=[...obstacles].sort((a,b)=>a.z-b.z);
+    sorted.forEach(drawTrafficCar);
+    drawPlayer();
+    if (flash>0) { ctx.fillStyle='rgba(255,80,70,'+(flash*1.2)+')'; ctx.fillRect(0,0,W,H); }
+    // speed streaks at high speed
+    if (state==='running' && speed>195) {
+      ctx.strokeStyle='#d9f6ff30'; ctx.lineWidth=2;
+      for(let i=0;i<8;i++){const x=(i*137+distance*90)%W; const yy=H*.42+(i%4)*H*.1; ctx.beginPath();ctx.moveTo(x,yy);ctx.lineTo(x-7,yy+24);ctx.stroke();}
+    }
+  }
+  function frame(now) {
+    const dt=lastTime ? (now-lastTime)/1000 : 0; lastTime=now;
+    update(dt); draw(); requestAnimationFrame(frame);
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state==='running') pauseGame(); });
+  updateHUD(); showPanel('menu');
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
